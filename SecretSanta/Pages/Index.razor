@@ -1,0 +1,265 @@
+﻿@page "/"
+
+@using System;
+@using SecretSanta.Services
+@using SecretSanta.Data
+
+@inject SecretSantaService service;
+@inject IToastService toastService;
+
+@if (_loading)
+{
+    <div class="container">
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-danger" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_currentStep.Equals(StepEnums.STEP_1))
+{
+    <div class="container">
+
+        <div class="d-flex justify-content-center" style="margin-top:2em;">
+            <h1>Step# 1 of 3</h1>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:2em;">
+            <h4>Add Participant</h4>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:0.5em;">
+            <h6><span class="badge badge-warning">@_participants.Count Participants Added</span></h6>
+        </div>
+
+
+        <EditForm Model="@_participant" OnValidSubmit="@HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <div class="d-flex justify-content-center" style="margin-top:0.5em;">
+                <ValidationSummary />
+            </div>
+            <div class="d-flex justify-content-center" style="margin-top:0.5em;">
+                <InputText placeholder="Name" @bind-Value="_participant.Name"
+                           style="width: 20em; border: 1px solid #C0C0C0" />
+            </div>
+            <div class="d-flex justify-content-center" style="margin-top:1em;">
+                <InputText placeholder="Email" @bind-Value="_participant.Email"
+                           style="width: 20em; border: 1px solid #C0C0C0" />
+            </div>
+            <div class="d-flex justify-content-center" style="margin-top:1em;">
+                <button type="submit" class="btn btn-dark btn-sm text-white" style="width: 12em">ADD</button>
+                <div>&nbsp;&nbsp;</div>
+                <button type="submit" class="btn btn-dark btn-sm text-white" style="width: 12em" @onclick="InitiateStep2">NEXT</button>
+            </div>
+        </EditForm>
+
+    </div>
+}
+
+@if (_currentStep.Equals(StepEnums.STEP_2))
+{
+    <div class="container">
+        <div class="d-flex justify-content-center" style="margin-top:2em;">
+            <h1>Step# 2 of 3</h1>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:2em;">
+            <h4>Review/Edit Participants</h4>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:0.5em;">
+            <h6><span class="badge badge-warning">@_participants.Count Participants</span></h6>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:1em;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _participants)
+                    {
+                        <tr>
+                            <td>
+                                <input style="width: 20em; border: 1px solid #C0C0C0" @bind="p.Name" />
+                            </td>
+                            <td>
+                                <input style="width: 20em; border: 1px solid #C0C0C0" @bind="p.Email" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:1em;">
+            <button type="button" class="btn-dark btn-sm text-white" style="width: 12em" @onclick="GoToStep1">BACK</button>
+            <div>&nbsp;&nbsp;</div>
+            <button type="button" class="btn-dark btn-sm text-white" style="width: 12em" @onclick="InitiateStep3">FINISH</button>
+        </div>
+    </div>
+}
+
+@if (_currentStep.Equals(StepEnums.STEP_3))
+{
+    <div class="container">
+
+        <div class="d-flex justify-content-center" style="margin-top:2em;">
+            <h1>Step# 3 of 3</h1>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:2em;">
+            <h4>Ho! Ho! Ho! Secret Santas!</h4>
+        </div>
+
+        <div class="d-flex justify-content-center" style="margin-top:0.5em;">
+            <h6><span class="badge badge-warning">@_participants.Count Participants</span></h6>
+        </div>
+
+        @if (_secretSantas == null)
+        {
+            <div class="d-flex justify-content-center" style="margin-top:1em;">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex justify-content-center" style="margin-top:1em;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Participant - Name</th>
+                            <th>Participant - Email</th>
+                            <th>Secret Santa - Name</th>
+                            <th>Secret santa - Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _participants)
+                        {
+                            <tr>
+                                <td>@p.Name</td>
+                                <td>@p.Email</td>
+                                <td>@p.SecretSanta.Name</td>
+                                <td>@p.SecretSanta.Email</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-center" style="margin-top:1em;">
+                <button type="button" class="btn-dark btn-sm text-white" style="width: 12em" @onclick="GoToStep2">BACK</button>
+            </div>
+        }
+
+    </div>
+}
+
+
+@code {
+    private bool _loading;
+    private StepEnums _currentStep;
+
+    private Participant _participant;
+    private List<Participant> _participants;
+    private List<Participant> _secretSantas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _participant = new Participant();
+        _participants = new List<Participant>();
+
+        _currentStep = StepEnums.STEP_1;
+    }
+
+    private void HandleValidSubmit()
+    {
+        var successResult = service.CheckAndAddParticipant(_participant, _participants).Result;
+
+        if (!successResult)
+        {
+            toastService.ShowError($"Details already present for: {_participant.Name}");
+        }
+        else
+        {
+            toastService.ShowSuccess($"Participant details added for: {_participant.Name}");
+        }
+
+        _participant = new Participant();
+    }
+
+    private async Task InitiateStep2()
+    {
+        ShowLoading(true);
+
+        if (_participants.Count >= 2)
+        {
+            _currentStep = StepEnums.STEP_2;
+        }
+        else
+        {
+            toastService.ShowWarning("Minimum of 2 participants are required to proceed forward!");
+        }
+
+        ShowLoading(false);
+    }
+
+    private async Task GoToStep1()
+    {
+        ShowLoading(true);
+
+        _currentStep = StepEnums.STEP_1;
+
+        ShowLoading(false);
+    }
+
+    private async Task GoToStep2()
+    {
+        ShowLoading(true);
+
+        _currentStep = StepEnums.STEP_2;
+
+        ShowLoading(false);
+    }
+
+    private async Task InitiateStep3()
+    {
+        ShowLoading(true);
+
+        _secretSantas = null;
+
+        if (_participants.Count < 2)
+        {
+            toastService.ShowWarning("Minimum of 2 participants are required to proceed forward!");
+        }
+        else
+        {
+            try
+            {
+                _currentStep = StepEnums.STEP_3;
+                _secretSantas = await service.GenerateSecretSanta(_participants);
+            }
+            catch (Exception ex)
+            {
+                toastService.ShowError($"Error occurred: {ex.Message}");
+            }
+        }
+
+        ShowLoading(false);
+    }
+
+    private void ShowLoading(bool load)
+    {
+        _loading = load;
+    }
+}
+
+
